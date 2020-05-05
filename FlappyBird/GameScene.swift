@@ -25,6 +25,7 @@ class GameScene: SKScene,SKPhysicsContactDelegate {
     var wallNode:SKNode!    //wallNodeは SKNodeを継承した「UI部品」
     var bird:SKSpriteNode!  //birdは SKSpriteNodeを継承した「UI部品」
     var star:SKSpriteNode!  //starは SKSpriteNodeを継承した「UI部品」
+    var timer:Timer!        //timer 一定時間置きに星を生成するタイマー用
     
     // 衝突判定カテゴリー 「<<」はビットをずらし、ビットの位置で
     let birdCategory: UInt32 = 1 << 0       // 0...00001
@@ -68,6 +69,7 @@ class GameScene: SKScene,SKPhysicsContactDelegate {
            bird.zRotation = 0
 
            wallNode.removeAllChildren()
+           star.removeAllChildren()
 
            bird.speed = 1
            scrollNode.speed = 1
@@ -84,7 +86,7 @@ class GameScene: SKScene,SKPhysicsContactDelegate {
        //設定したカテゴリーで何と何が衝突したか判定する
         if (contact.bodyA.categoryBitMask & scoreCategory) == scoreCategory || (contact.bodyB.categoryBitMask & scoreCategory) == scoreCategory {
             // スコア用の物体と衝突した　=>スコア +1
-            print("ScoreUp")
+            print("ScoreUp") //下のログに表示させるのみ
             score += 1
             scoreLabelNode.text = "Score:\(score)"
             
@@ -103,7 +105,7 @@ class GameScene: SKScene,SKPhysicsContactDelegate {
             
         } else {
             // 壁か地面と衝突した
-            print("GameOver")
+            print("GameOver") //下のログに表示させるのみ
 
             // 壁か地面と衝突したのでスクロールを停止させる。親ノード（scrollNode）のspeedを0
             scrollNode.speed = 0 //speedプロパティ: 1=>設定値が反映。 速:1より大きくする。
@@ -123,6 +125,7 @@ class GameScene: SKScene,SKPhysicsContactDelegate {
     
     // SKView上にシーンが表示されたときに呼ばれるメソッド
     override func didMove(to view: SKView) {
+
     
     //物理演算-開始
         // (シーン全体の)　重力を設定
@@ -149,8 +152,12 @@ class GameScene: SKScene,SKPhysicsContactDelegate {
         setupCloud()
         setupWall()
         setupBird()
-        setupStar()
+        setupStar() //5秒未満でGameOverの際、エラーにならないようにリスタートする
         setupScoreLabel()   // スコアラベル初期化用
+        
+        //timerによるsetupStar呼び出し
+        self.timer = Timer.scheduledTimer(timeInterval: 5, target: self, selector: #selector(self.setupStar), userInfo: nil, repeats: true)
+
     }
 
 // MARK: -　『地面』 ①地面の読み込み　②スプライト作成　③スプライトの表示位置指定
@@ -392,7 +399,7 @@ class GameScene: SKScene,SKPhysicsContactDelegate {
     }
     // MARK: -　『星』 ①星の読み込み　②スプライト作成　③スプライトの表示位置指定
     
-    func setupStar() {
+@objc  func setupStar() {
         // 星の画像を2種類読み込む
         let starTextureA = SKTexture(imageNamed: "star_a")
         starTextureA.filteringMode = .linear
@@ -415,10 +422,8 @@ class GameScene: SKScene,SKPhysicsContactDelegate {
         // 物理演算を設定 <半径を指定して円形の物理体を設定>
         star.physicsBody = SKPhysicsBody(circleOfRadius: star.size.height / 2)
 
-        // 重力の影響を無視させる
-        //star.physicsBody?.affectedByGravity = false
     //物理演算-終了
-        
+
         // アニメーションを設定
         star.run(flap)
 
@@ -426,9 +431,6 @@ class GameScene: SKScene,SKPhysicsContactDelegate {
         self.addChild(star)
         //addChild(star)
 }
-        
-        
-        
 
 // MARK: -　『スコア』 ①初期化　②スプライト作成　③スプライトの表示位置指定
     

@@ -34,14 +34,35 @@ class GameScene: SKScene,SKPhysicsContactDelegate {
     let scoreCategory: UInt32 = 1 << 3      // 0...01000
     let starCategory: UInt32 = 1 << 4       // 0...10000
       
-    // スコア用
+    // スコア用変数
     var score = 0
+    var itemScore = 0
+    
     //現在のスコアとベストスコアを画面上部に設置するラベル
     var scoreLabelNode:SKLabelNode!
+    var itemScoreLabelNode:SKLabelNode!
     var bestScoreLabelNode:SKLabelNode!
     //UserDefaultsクラス...スコアを保存(Realmとは異なる保存方法)するクラス
-    let userDefaults:UserDefaults = UserDefaults.standard //キー("BEST")、値を指定して保存
+    let userDefaults:UserDefaults = UserDefaults.standard
     
+    //星取得時のサウンド
+    let starSound = SKAction.playSoundFileNamed("starBGM", waitForCompletion: false)
+
+
+    //ベストスコア判定用メソッド
+    func bestScore() {
+        // ベストスコア更新か確認する
+        var bestScore = userDefaults.integer(forKey: "BEST")
+        //ベストスコアと現在のスコアを比較
+        if (itemScore + score) > bestScore {
+            bestScore = (itemScore + score)
+            bestScoreLabelNode.text = "Best Score:\(bestScore)"
+            
+            //set(_:forKey:)メソッドで「値・キー」指定して保存(この時点で保存されない)
+            userDefaults.set(bestScore, forKey: "BEST")
+            userDefaults.synchronize() //即座に保存される
+        }
+    }
 
 // MARK: - touchBegan <画面をタップした時に呼ばれる>
      override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
@@ -59,7 +80,9 @@ class GameScene: SKScene,SKPhysicsContactDelegate {
 // MARK: - リスタート処理 <①スコア0 ②鳥位置を初期値 ③壁取り除き、鳥のspeedを1へ>
     func restart() {
            score = 0
+           itemScore = 0
            scoreLabelNode.text = "Score:\(score)"  //スコア"0"のラベルを表示
+           itemScoreLabelNode.text = "Item Score:\(itemScore)"  //スコア"0"のラベルを表示
         
            bird.position = CGPoint(x: self.frame.size.width * 0.2, y:self.frame.size.height * 0.7)
            // 鳥の速度をゼロにする
@@ -74,8 +97,8 @@ class GameScene: SKScene,SKPhysicsContactDelegate {
            bird.speed = 1
            scrollNode.speed = 1
        }
-// MARK: - SKPhysicsContactDelegateのメソッド <衝突したときに呼ばれる>
-    
+// MARK: - 衝突時に呼ばれる　<SKPhysicsContactDelegateメソッド>
+
     func didBegin(_ contact: SKPhysicsContact) {
         // ゲームオーバーのときは何もしない <壁に衝突すると地面にも必ず衝突するので２度目の処理を行わないようにしている>
         if scrollNode.speed <= 0 {
@@ -85,33 +108,49 @@ class GameScene: SKScene,SKPhysicsContactDelegate {
     // SKPhysicsContactクラスは「bodyA,B」という、SKPhysicsBodyクラスで表されるプロパティを持つ
        //設定したカテゴリーで何と何が衝突したか判定する
         if (contact.bodyA.categoryBitMask & scoreCategory) == scoreCategory || (contact.bodyB.categoryBitMask & scoreCategory) == scoreCategory {
-            // スコア用の物体と衝突した　=>スコア +1
+            // スコア用の(見えない)物体と衝突した　=>スコア +1
             print("ScoreUp") //下のログに表示させるのみ
             score += 1
             scoreLabelNode.text = "Score:\(score)"
             
-            // ベストスコア更新か確認する
-            var bestScore = userDefaults.integer(forKey: "BEST")
-            //ベストスコアと過去のスコアの比較
-            if score > bestScore {
-                bestScore = score
-                bestScoreLabelNode.text = "Best Score:\(bestScore)"
+            //bestScoreメソッド呼出し
+            bestScore()
+
+          // 鳥が星と衝突
+        } else if (contact.bodyA.categoryBitMask & starCategory) == starCategory || (contact.bodyB.categoryBitMask & starCategory) == starCategory{
+            
+            if contact.bodyA.categoryBitMask == starCategory{
+                contact.bodyA.node?.removeFromParent() //星を削除
+                //星取得時の効果音
+                star.run(starSound)
+                print("Item ScoreUp") //下のログに表示させるのみ
+                // 鳥が星と衝突した　=>スコア +1
+                itemScore += 1
+                itemScoreLabelNode.text = "Item Score:\(itemScore)"
+                //bestScoreメソッド呼出し
+                bestScore()
                 
-                //set(_:forKey:)メソッドで「値・キー」指定して保存(この時点で保存されない)
-                userDefaults.set(bestScore, forKey: "BEST")
-                userDefaults.synchronize() //即座に保存される
+            }else if contact.bodyB.categoryBitMask == starCategory{
+                contact.bodyB.node?.removeFromParent() //星を削除
+                //星取得時の効果音
+                self.run(starSound)
+                print("Item ScoreUp") //下のログに表示させるのみ
+                // 鳥が星と衝突した　=>スコア +1
+                itemScore += 1
+                itemScoreLabelNode.text = "Item Score:\(itemScore)"
+                
+                bestScore()
             }
-            
-            
-        } else {
-            // 壁か地面と衝突した
+        
+        }else{
+            // 鳥が、壁か地面と衝突した
             print("GameOver") //下のログに表示させるのみ
 
             // 壁か地面と衝突したのでスクロールを停止させる。親ノード（scrollNode）のspeedを0
             scrollNode.speed = 0 //speedプロパティ: 1=>設定値が反映。 速:1より大きくする。
             
-            //collisionBitMaskを地面だけにすることで、壁と衝突しないようにする。
-            //目的：衝突を表現させる（鳥を転がす際に、壁はすり抜ける？）
+            //collisionBitMaskを地面だけにすることで、壁と衝突してもは衝突反応させない。
+            //目的：衝突後に、壁と衝突して再度衝突処理を避ける
             bird.physicsBody?.collisionBitMask = groundCategory
 
             let roll = SKAction.rotate(byAngle: CGFloat(Double.pi) * CGFloat(bird.position.y) * 0.01, duration:1)
@@ -121,7 +160,7 @@ class GameScene: SKScene,SKPhysicsContactDelegate {
             })
         }
     }
-// MARK: -  didMove <ゲーム画面表示時に呼び出されるメソッド>
+// MARK: -   ゲーム画面表示時に呼出されるメソッド　<didMove>
     
     // SKView上にシーンが表示されたときに呼ばれるメソッド
     override func didMove(to view: SKView) {
@@ -155,8 +194,9 @@ class GameScene: SKScene,SKPhysicsContactDelegate {
         setupStar() //5秒未満でGameOverの際、エラーにならないようにリスタートする
         setupScoreLabel()   // スコアラベル初期化用
         
+        
         //timerによるsetupStar呼び出し
-        self.timer = Timer.scheduledTimer(timeInterval: 5, target: self, selector: #selector(self.setupStar), userInfo: nil, repeats: true)
+        self.timer = Timer.scheduledTimer(timeInterval: 2, target: self, selector: #selector(self.setupStar), userInfo: nil, repeats: true)
 
     }
 
@@ -343,6 +383,9 @@ class GameScene: SKScene,SKPhysicsContactDelegate {
                 scoreNode.physicsBody?.categoryBitMask = self.scoreCategory
                 //contactTestBitMaskプロパティで衝突することを判定する相手のカテゴリーを設定
                 scoreNode.physicsBody?.contactTestBitMask = self.birdCategory
+                
+                //contactTestBitMaskプロパティで衝突することを判定する相手のカテゴリーを設定
+             //   scoreNode.physicsBody?.collisionBitMask = self.birdCategory
 
                 wall.addChild(scoreNode)
 // MARK: -
@@ -388,6 +431,7 @@ class GameScene: SKScene,SKPhysicsContactDelegate {
         //collisionBitMaskプロパティは当たった時に跳ね返る動作をする相手を設定
         bird.physicsBody?.categoryBitMask = birdCategory
         bird.physicsBody?.collisionBitMask = groundCategory | wallCategory
+        //birdが衝突通知をするカテゴリーを設定
         bird.physicsBody?.contactTestBitMask = groundCategory | wallCategory
     //物理演算-終了
         
@@ -402,9 +446,9 @@ class GameScene: SKScene,SKPhysicsContactDelegate {
 @objc  func setupStar() {
         // 星の画像を2種類読み込む
         let starTextureA = SKTexture(imageNamed: "star_a")
-        starTextureA.filteringMode = .linear
+    starTextureA.filteringMode = .nearest
         let starTextureB = SKTexture(imageNamed: "star_b")
-        starTextureB.filteringMode = .linear
+    starTextureB.filteringMode = .nearest
 
             
         // 2種類のテクスチャを交互に変更するアニメーションを作成
@@ -421,6 +465,12 @@ class GameScene: SKScene,SKPhysicsContactDelegate {
     //物理演算-開始
         // 物理演算を設定 <半径を指定して円形の物理体を設定>
         star.physicsBody = SKPhysicsBody(circleOfRadius: star.size.height / 2)
+        
+        // 衝突のカテゴリー設定
+        //collisionBitMaskプロパティは当たった時に跳ね返る動作をする相手を設定
+        star.physicsBody?.categoryBitMask = starCategory
+        star.physicsBody?.contactTestBitMask = birdCategory
+        star.physicsBody?.collisionBitMask = birdCategory
 
     //物理演算-終了
 
@@ -443,10 +493,19 @@ class GameScene: SKScene,SKPhysicsContactDelegate {
         scoreLabelNode.horizontalAlignmentMode = SKLabelHorizontalAlignmentMode.left
         scoreLabelNode.text = "Score:\(score)"
         self.addChild(scoreLabelNode)
+        
+        itemScore = 0
+        itemScoreLabelNode = SKLabelNode()
+        itemScoreLabelNode.fontColor = UIColor.black
+        itemScoreLabelNode.position = CGPoint(x: 10, y: self.frame.size.height - 90)
+        itemScoreLabelNode.zPosition = 100 // 一番手前に表示する　zPosition:(x,y,z)のz軸
+        itemScoreLabelNode.horizontalAlignmentMode = SKLabelHorizontalAlignmentMode.left //テキストの水平位置
+        itemScoreLabelNode.text = "Item Score:\(itemScore)"
+        self.addChild(itemScoreLabelNode)
 
         bestScoreLabelNode = SKLabelNode()
         bestScoreLabelNode.fontColor = UIColor.black
-        bestScoreLabelNode.position = CGPoint(x: 10, y: self.frame.size.height - 90)
+        bestScoreLabelNode.position = CGPoint(x: 10, y: self.frame.size.height - 120)
         bestScoreLabelNode.zPosition = 100 // 一番手前に表示する　zPosition:(x,y,z)のz軸
         bestScoreLabelNode.horizontalAlignmentMode = SKLabelHorizontalAlignmentMode.left //テキストの水平位置
 

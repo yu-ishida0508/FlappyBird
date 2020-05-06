@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		6218B709246288B4006C6098 /* starBGM.mp3 in Resources */ = {isa = PBXBuildFile; fileRef = 6218B708246288B4006C6098 /* starBGM.mp3 */; };
 		6236E0D6245A9ED6004D734A /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6236E0D5245A9ED6004D734A /* AppDelegate.swift */; };
 		6236E0D8245A9ED6004D734A /* SceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6236E0D7245A9ED6004D734A /* SceneDelegate.swift */; };
 		6236E0DA245A9ED6004D734A /* ViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6236E0D9245A9ED6004D734A /* ViewController.swift */; };
@@ -17,6 +18,7 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		6218B708246288B4006C6098 /* starBGM.mp3 */ = {isa = PBXFileReference; lastKnownFileType = audio.mp3; path = starBGM.mp3; sourceTree = "<group>"; };
 		6236E0D2245A9ED6004D734A /* FlappyBird.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = FlappyBird.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		6236E0D5245A9ED6004D734A /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		6236E0D7245A9ED6004D734A /* SceneDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneDelegate.swift; sourceTree = "<group>"; };
@@ -63,6 +65,7 @@
 				6236E0D9245A9ED6004D734A /* ViewController.swift */,
 				6236E127245C2E27004D734A /* GameScene.swift */,
 				6236E0DB245A9ED6004D734A /* Main.storyboard */,
+				6218B708246288B4006C6098 /* starBGM.mp3 */,
 				6236E0DE245A9ED8004D734A /* Assets.xcassets */,
 				6236E0E0245A9ED8004D734A /* LaunchScreen.storyboard */,
 				6236E0E3245A9ED8004D734A /* Info.plist */,
@@ -129,6 +132,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				6236E0E2245A9ED8004D734A /* LaunchScreen.storyboard in Resources */,
+				6218B709246288B4006C6098 /* starBGM.mp3 in Resources */,
 				6236E0DF245A9ED8004D734A /* Assets.xcassets in Resources */,
 				6236E0DD245A9ED6004D734A /* Main.storyboard in Resources */,
 			);
